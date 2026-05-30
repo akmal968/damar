@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Phone, MapPin, Send, CheckCircle2 } from 'lucide-react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 
 interface ContactPageProps {
   onLeadSubmitted: () => void;
@@ -23,45 +25,74 @@ export default function ContactPage({ onLeadSubmitted }: ContactPageProps) {
     { value: 'custom-app', label: 'Aplikasi Kustom Berbasis Web' }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.phone) {
       alert('Mohon isi semua field penting!');
       return;
     }
 
-    // Save lead to LocalStorage to integrate with Floating Leads state
-    const currentLeads = JSON.parse(localStorage.getItem('nexatech_leads') || '[]');
-    const newLead = {
-      id: `lead-${Date.now()}`,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      serviceType: servicesOption.find(s => s.value === formData.service)?.label || formData.service,
-      notes: formData.message,
-      estimate: { price: 'Dihitung saat konsultasi' },
-      date: new Date().toISOString()
-    };
+    try {
+      const leadId = `lead-${Date.now()}`;
+      const serviceName = servicesOption.find(s => s.value === formData.service)?.label || formData.service;
+      const newLead = {
+        id: leadId,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        serviceType: serviceName,
+        notes: formData.message || '',
+        urgency: 'regular',
+        date: new Date().toISOString(),
+        estimate: { price: 'Dihitung saat konsultasi' }
+      };
 
-    localStorage.setItem('nexatech_leads', JSON.stringify([newLead, ...currentLeads]));
-    
-    // Set success and trigger app refresh for Leads state
-    setSuccess(true);
-    onLeadSubmitted();
+      // Write to Firestore database
+      await setDoc(doc(db, 'leads', leadId), newLead);
 
-    // Reset Form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      service: 'umkm',
-      message: ''
-    });
+      // Save lead to LocalStorage to integrate with Floating Leads state as user history fallback
+      const currentLeads = JSON.parse(localStorage.getItem('nexatech_leads') || '[]');
+      localStorage.setItem('nexatech_leads', JSON.stringify([newLead, ...currentLeads]));
+      
+      // Format WhatsApp content matching requested template
+      const waMessage = `Ada yang melakukan konsultasi
+Nama : ${formData.name}
+Email : ${formData.email}
+No. WhatsApp : ${formData.phone}
+Layanan : ${serviceName}
+Estimasi : Dihitung saat konsultasi
+Detail Kebutuhan / Pesan Anda : ${formData.message || '-'}`;
 
-    // Timeout clear success
-    setTimeout(() => {
-      setSuccess(false);
-    }, 5000);
+      const waUrl = `https://wa.me/6289531900473?text=${encodeURIComponent(waMessage)}`;
+      localStorage.setItem('nexatech_last_wa_url', waUrl);
+
+      // Set success and trigger app refresh for Leads state
+      setSuccess(true);
+      onLeadSubmitted();
+
+      // Reset Form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        service: 'umkm',
+        message: ''
+      });
+
+      // Try automatic redirection
+      try {
+        window.open(waUrl, '_blank');
+      } catch (browserError) {
+        console.warn('Popup blocker prevented automatic redirection:', browserError);
+      }
+
+      // Timeout clear success
+      setTimeout(() => {
+        setSuccess(false);
+      }, 8000);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'leads');
+    }
   };
 
   return (
@@ -91,12 +122,25 @@ export default function ContactPage({ onLeadSubmitted }: ContactPageProps) {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3 text-sm"
+              className="p-5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl space-y-3"
             >
-              <CheckCircle2 className="text-emerald-600 shrink-0" size={18} />
-              <div>
-                <strong>Konsultasi Berhasil Terkirim!</strong> Data Anda tersimpan di kotak masuk lokal. Kami akan menghubungi Anda secepatnya.
+              <div className="flex items-center gap-3 text-sm">
+                <CheckCircle2 className="text-emerald-600 shrink-0" size={18} />
+                <div>
+                  <strong>Konsultasi Berhasil Terkirim!</strong> Data Anda telah tersimpan secara realtime di Cloud Database.
+                </div>
               </div>
+              <p className="text-xs text-emerald-700">
+                Jika WhatsApp tidak terbuka secara otomatis, silakan klik tombol di bawah untuk langsung berkonsultasi cepat dengan admin kami:
+              </p>
+              <a
+                href={localStorage.getItem('nexatech_last_wa_url') || "https://wa.me/6289531900473"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Kirim via WhatsApp
+              </a>
             </motion.div>
           )}
 

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, CheckCircle2, Calculator, Sparkles } from 'lucide-react';
 import { SERVICES_DATA } from '../data';
+import { doc, setDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 
 interface ConsultationModalProps {
   isOpen: boolean;
@@ -47,7 +49,7 @@ export default function ConsultationModal({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.phone) {
       alert('Harap isi nama, email, dan nomor telepon Anda.');
@@ -55,21 +57,53 @@ export default function ConsultationModal({
     }
 
     setIsSubmitting(true);
-    // Simulate API request
-    setTimeout(() => {
+    try {
+      const leadId = 'lead-' + Date.now();
+      const estimate = calculateEstimate();
+      const newSubmission = {
+        id: leadId,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        serviceType: formData.serviceType,
+        notes: formData.notes || '',
+        urgency: formData.urgency || 'regular',
+        date: new Date().toISOString(),
+        estimate: estimate,
+      };
+
+      // Direct write to cloud database
+      await setDoc(doc(db, 'leads', leadId), newSubmission);
+
+      // Also persist to localStorage history
+      const existingSubmissions = JSON.parse(localStorage.getItem('nexatech_leads') || '[]');
+      localStorage.setItem('nexatech_leads', JSON.stringify([newSubmission, ...existingSubmissions]));
+
+      // Build WhatsApp message formatted according to request
+      const serviceName = SERVICES_DATA.find(s => s.id === formData.serviceType)?.title || formData.serviceType;
+      const waMessage = `Ada yang melakukan konsultasi
+Nama : ${formData.name}
+Email : ${formData.email}
+No. WhatsApp : ${formData.phone}
+Layanan : ${serviceName}
+Estimasi : ${estimate.price}
+Detail Kebutuhan / Pesan Anda : ${formData.notes || '-'}`;
+
+      const waUrl = `https://wa.me/6281212300775?text=${encodeURIComponent(waMessage)}`;
+
       setIsSubmitting(false);
       setIsSubmitted(true);
 
-      // Save to localStorage
-      const existingSubmissions = JSON.parse(localStorage.getItem('nexatech_leads') || '[]');
-      const newSubmission = {
-        ...formData,
-        id: 'lead-' + Date.now(),
-        date: new Date().toISOString(),
-        estimate: calculateEstimate(),
-      };
-      localStorage.setItem('nexatech_leads', JSON.stringify([newSubmission, ...existingSubmissions]));
-    }, 1500);
+      // Automatic trigger redirection
+      try {
+        window.open(waUrl, '_blank');
+      } catch (browserError) {
+        console.warn('Popup blocker prevented automatic redirection:', browserError);
+      }
+    } catch (error) {
+      setIsSubmitting(false);
+      handleFirestoreError(error, OperationType.CREATE, 'leads');
+    }
   };
 
   const currentEstimate = calculateEstimate();
@@ -266,10 +300,16 @@ export default function ConsultationModal({
                   </button>
                   <a
                     id="btn-whatsapp-thanks"
-                    href={`https://wa.me/${formData.phone.replace(/[^0-9]/g, '') || '628123456789'}?text=Halo%20Nexatech%2C%20saya%20sudah%20mengirim%20formulir%20konsultasi%20untuk%20layanan%20${formData.serviceType}`}
+                    href={`https://wa.me/6289531900473?text=${encodeURIComponent(`Ada yang melakukan konsultasi
+Nama : ${formData.name}
+Email : ${formData.email}
+No. WhatsApp : ${formData.phone}
+Layanan : ${SERVICES_DATA.find(s => s.id === formData.serviceType)?.title || formData.serviceType}
+Estimasi : ${currentEstimate.price}
+Detail Kebutuhan / Pesan Anda : ${formData.notes || '-'}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-3.5 bg-primary text-white rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90 transition-all inline-flex items-center gap-1.5"
+                    className="px-6 py-3.5 bg-primary text-white rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90 transition-all inline-flex items-center gap-1.5 cursor-pointer"
                   >
                     Hubungi WhatsApp
                   </a>

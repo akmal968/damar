@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "Formulir data konsultasi masuk dari calon klien",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the lead"
+        },
+        "name": {
+          "type": "string",
+          "description": "Nama lengkap calon klien"
+        },
+        "email": {
+          "type": "string",
+          "description": "Alamat email calon klien"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Nomor WhatsApp calon klien"
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "Jenis layanan website yang diinginkan"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Catatan tambahan atau detail proyek"
+        },
+        "urgency": {
+          "type": "string",
+          "description": "Tingkat urgensi proyek"
+        },
+        "date": {
+          "type": "string",
+          "description": "Tanggal pengiriman"
+        },
+        "estimate": {
+          "type": "object",
+          "description": "Estimasi harga kalkulasi otomatis"
+        }
+      },
+      "required": ["id", "name", "email", "phone", "serviceType", "date"]
+    }
+  },
+  "firestore": {
+    "leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Koleksi data prospek atau kontak konsultasi masuk dari pengunjung website"
+    }
+  }
+}

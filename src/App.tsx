@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Inbox, Trash2, Calendar, CheckSquare, X } from 'lucide-react';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from './lib/firebase';
 
 import TopNavBar from './components/TopNavBar';
 import Hero from './components/Hero';
@@ -23,15 +25,30 @@ export default function App() {
   const [isLeadListOpen, setIsLeadListOpen] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
 
-  // Function to load leads from LocalStorage
-  const loadLeadsList = () => {
-    const data = JSON.parse(localStorage.getItem('nexatech_leads') || '[]');
-    setLeads(data);
-  };
-
+  // Real-time synchronization with Firestore
   useEffect(() => {
-    loadLeadsList();
-  }, [isConsultModalOpen]);
+    const q = query(collection(db, 'leads'), orderBy('date', 'desc'));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const loadedLeads = snapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+        }));
+        setLeads(loadedLeads);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'leads');
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  const loadLeadsList = () => {
+    // Keeping for backwards compatibility with children prop callbacks,
+    // although real-time snapshots automatically keep state perfectly in-sync.
+  };
 
   // Open modal with pre-selected service type
   const handleOpenConsult = (serviceId: string = 'umkm') => {
@@ -39,10 +56,17 @@ export default function App() {
     setIsConsultModalOpen(true);
   };
 
-  const clearLeads = () => {
-    if (window.confirm('Hapus seluruh daftar konsultasi tersimpan?')) {
-      localStorage.removeItem('nexatech_leads');
-      setLeads([]);
+  const clearLeads = async () => {
+    if (window.confirm('Hapus seluruh daftar konsultasi tersimpan di cloud database?')) {
+      try {
+        // Delete each doc in parallel
+        await Promise.all(
+          leads.map((lead) => deleteDoc(doc(db, 'leads', lead.id)))
+        );
+        localStorage.removeItem('nexatech_leads');
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, 'leads');
+      }
     }
   };
 

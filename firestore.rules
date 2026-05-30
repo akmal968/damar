@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 3. Validation Blueprint for Lead Entity
+    function isValidLead(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'phone', 'serviceType', 'date'])
+        && data.keys().size() <= 9
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 250
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 50
+        && data.serviceType is string && data.serviceType.size() <= 100
+        && data.date is string && data.date.size() <= 50
+        && (!data.keys().hasAny(['notes']) || (data.notes is string && data.notes.size() <= 2000))
+        && (!data.keys().hasAny(['urgency']) || (data.urgency is string && data.urgency.size() <= 50))
+        && (!data.keys().hasAny(['estimate']) || (data.estimate is map));
+    }
+
+    // 4. Secure Leads Rules (Public Submission & Management Interface)
+    match /leads/{leadId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isValidId(leadId) && isValidLead(incoming()) && incoming().id == leadId;
+      allow update: if false; // Once submitted, a lead is read-only and immutable.
+      allow delete: if true; // Users can clean up submissions from the dashboard drawer.
+    }
+  }
+}
