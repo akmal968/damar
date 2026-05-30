@@ -1,0 +1,6 @@
+{
+  "name": "Nexatech Web Studio",
+  "description": "Layanan pembuatan website profesional untuk Undangan Pernikahan, Portofolio, Bisnis UMKM, dan Aplikasi Kustom dengan fokus pada performa dan estetika minimalis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
