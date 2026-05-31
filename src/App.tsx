@@ -91,7 +91,10 @@ export default function App() {
           >
             {activeTab === 'home' && (
               <>
-                <Hero onOpenConsult={() => handleOpenConsult('umkm')} />
+                <Hero 
+                  onOpenConsult={() => handleOpenConsult('umkm')} 
+                  onViewPortfolio={() => setActiveTab('portfolio')}
+                />
                 <Services onSelectService={handleOpenConsult} />
                 <WhyChooseUs />
                 <Testimonials />

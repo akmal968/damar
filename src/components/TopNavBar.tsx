@@ -11,6 +11,7 @@ interface TopNavBarProps {
 export default function TopNavBar({ onOpenConsult, activeTab, setActiveTab }: TopNavBarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,14 +53,46 @@ export default function TopNavBar({ onOpenConsult, activeTab, setActiveTab }: To
           <a
             href="#home"
             onClick={(e) => handleNavClick(e, 'home')}
-            className="flex items-center gap-3 active:scale-95 transition-transform"
+            className="flex items-center gap-2.5 active:scale-95 transition-transform"
           >
-            <img
-              src="https://lh3.googleusercontent.com/aida/ADBb0ugPAtbZE1AzEco0hMliAbwdFv61lmii0p_rMZWEIO50fTX_WD0-PNY5Wic-7U8RyjuW7SBQaL1QdBeCVAxWnfQecF4hBGv-ltGBlJBk9FeV0wokGbsq88Q_7O0kEum-EWexhv4pO8ge2SrH5qgt8f73UIevM_fYJcu1JdafOPAGuVmERx45ba28arb3IidppJE7SY0o_gMnWp_VzD_5GD2NkuhmDweTdINX98SXKNDdJMGtrzMzKEysyQ"
-              alt="NEXATECH Logo"
-              className={`w-auto transition-all ${isScrolled ? 'h-7' : 'h-8 md:h-9'}`}
-              style={{ maxWidth: '140px' }}
-            />
+            {!logoError ? (
+              <img
+                src="https://lh3.googleusercontent.com/aida/ADBb0ugPAtbZE1AzEco0hMliAbwdFv61lmii0p_rMZWEIO50fTX_WD0-PNY5Wic-7U8RyjuW7SBQaL1QdBeCVAxWnfQecF4hBGv-ltGBlJBk9FeV0wokGbsq88Q_7O0kEum-EWexhv4pO8ge2SrH5qgt8f73UIevM_fYJcu1JdafOPAGuVmERx45ba28arb3IidppJE7SY0o_gMnWp_VzD_5GD2NkuhmDweTdINX98SXKNDdJMGtrzMzKEysyQ"
+                alt="NEXATECH Logo"
+                referrerPolicy="no-referrer"
+                onError={() => setLogoError(true)}
+                className={`w-auto transition-all ${isScrolled ? 'h-7' : 'h-8 md:h-9'}`}
+                style={{ maxWidth: '140px' }}
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <svg
+                  width={isScrolled ? "26" : "30"}
+                  height={isScrolled ? "26" : "30"}
+                  viewBox="0 0 32 32"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-primary transition-transform shrink-0"
+                >
+                  {/* Left slash */}
+                  <path
+                    d="M6 6H11L19 26H14L6 6Z"
+                    fill="currentColor"
+                  />
+                  {/* Right slash */}
+                  <path
+                    d="M18 6H23L15 26H10L18 6Z"
+                    fill="currentColor"
+                    className="opacity-60"
+                  />
+                  {/* Focus core node */}
+                  <rect x="14" y="14" width="4" height="4" rx="2" fill="currentColor" />
+                </svg>
+                <span className={`font-sans font-black tracking-widest text-primary select-none transition-all ${isScrolled ? 'text-base' : 'text-lg md:text-xl'}`}>
+                  NEXATECH
+                </span>
+              </div>
+            )}
           </a>
 
           {/* Desktop Nav Links */}

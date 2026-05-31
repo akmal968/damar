@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nexatech.id/sitemap.xml
+Sitemap: https://damaradji.netlify.app/sitemap.xml
