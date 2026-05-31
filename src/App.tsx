@@ -24,6 +24,7 @@ export default function App() {
   const [selectedService, setSelectedService] = useState('umkm');
   const [isLeadListOpen, setIsLeadListOpen] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
+  const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
   // Real-time synchronization with Firestore
   useEffect(() => {
@@ -57,16 +58,15 @@ export default function App() {
   };
 
   const clearLeads = async () => {
-    if (window.confirm('Hapus seluruh daftar konsultasi tersimpan di cloud database?')) {
-      try {
-        // Delete each doc in parallel
-        await Promise.all(
-          leads.map((lead) => deleteDoc(doc(db, 'leads', lead.id)))
-        );
-        localStorage.removeItem('nexatech_leads');
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, 'leads');
-      }
+    try {
+      // Delete each doc in parallel
+      await Promise.all(
+        leads.map((lead) => deleteDoc(doc(db, 'leads', lead.id)))
+      );
+      localStorage.removeItem('nexatech_leads');
+      setIsConfirmingClear(false);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'leads');
     }
   };
 
@@ -130,6 +130,7 @@ export default function App() {
           id="btn-lead-tracker"
           onClick={() => {
             loadLeadsList();
+            setIsConfirmingClear(false);
             setIsLeadListOpen(true);
           }}
           className="bg-primary hover:opacity-90 border border-primary shadow-lg text-white rounded-xl p-3.5 flex items-center gap-2.5 select-none hover:scale-102 active:scale-95 transition-all text-xs uppercase tracking-widest font-black cursor-pointer"
@@ -155,7 +156,10 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.3 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsLeadListOpen(false)}
+              onClick={() => {
+                setIsLeadListOpen(false);
+                setIsConfirmingClear(false);
+              }}
               className="absolute inset-0 bg-black"
             />
 
@@ -180,7 +184,10 @@ export default function App() {
                 </div>
                 <button
                   id="btn-close-lead-drawer"
-                  onClick={() => setIsLeadListOpen(false)}
+                  onClick={() => {
+                    setIsLeadListOpen(false);
+                    setIsConfirmingClear(false);
+                  }}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 cursor-pointer"
                 >
                   <X size={20} />
@@ -236,18 +243,44 @@ export default function App() {
 
               {/* Drawer Footer actions */}
               {leads.length > 0 && (
-                <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-between rounded-none">
-                  <button
-                    id="btn-clear-leads"
-                    onClick={clearLeads}
-                    className="text-xs text-red-650 hover:text-red-700 font-bold uppercase tracking-wider inline-flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Trash2 size={13} />
-                    Hapus Semua Data
-                  </button>
-                  <p className="text-[9px] text-slate-400 italic">
-                    *Tersimpan di LocalStorage browser Anda
-                  </p>
+                <div className="p-6 border-t border-slate-100 bg-slate-50 flex flex-col gap-3 rounded-none">
+                  {isConfirmingClear ? (
+                    <div className="flex flex-col gap-2.5 w-full">
+                      <p className="text-[11px] font-bold text-red-650 leading-relaxed">
+                        Yakin ingin menghapus seluruh ({leads.length}) data konsultasi secara permanen dari cloud database?
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          id="btn-confirm-clear"
+                          onClick={clearLeads}
+                          className="flex-1 py-2 bg-red-650 hover:bg-red-700 text-white rounded-lg text-xs font-bold uppercase text-center transition-colors cursor-pointer"
+                        >
+                          Ya, Hapus Semua
+                        </button>
+                        <button
+                          id="btn-cancel-clear"
+                          onClick={() => setIsConfirmingClear(false)}
+                          className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold uppercase text-center transition-colors cursor-pointer"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between w-full">
+                      <button
+                        id="btn-clear-leads"
+                        onClick={() => setIsConfirmingClear(true)}
+                        className="text-xs text-red-650 hover:text-red-700 font-bold uppercase tracking-wider inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Trash2 size={13} />
+                        Hapus Semua Data
+                      </button>
+                      <p className="text-[9px] text-slate-400 italic">
+                        *Tersimpan di Cloud & Lokal
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>

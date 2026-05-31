@@ -238,7 +238,7 @@ Detail Kebutuhan / Pesan Anda : ${formData.message || '-'}`;
             </div>
             <div>
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Hubungi Email</div>
-              <div className="text-sm font-bold text-primary mt-1.5">hello@nexatech.id</div>
+              <div className="text-sm font-bold text-primary mt-1.5">damaradji@gmail.com</div>
             </div>
           </div>
 
@@ -249,7 +249,7 @@ Detail Kebutuhan / Pesan Anda : ${formData.message || '-'}`;
             </div>
             <div>
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">WhatsApp Bisnis</div>
-              <div className="text-sm font-bold text-primary mt-1.5">+62 821-2345-6789</div>
+              <div className="text-sm font-bold text-primary mt-1.5">+62 81212300775</div>
             </div>
           </div>
 
@@ -260,7 +260,7 @@ Detail Kebutuhan / Pesan Anda : ${formData.message || '-'}`;
             </div>
             <div>
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Lokasi & Jam Operasional</div>
-              <div className="text-sm font-bold text-primary mt-1.5">Jakarta, ID • Sen-Jum 09:00 - 18:00</div>
+              <div className="text-sm font-bold text-primary mt-1.5">Jakarta, ID • Sen-Ahad 09:00 - 18:00</div>
             </div>
           </div>
 
